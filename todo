@@ -1,4 +1,5 @@
-requirements
+requirements file for pip
+build script
 setup script
 language.py - module for handling language structure
 logic structures
@@ -6,3 +7,51 @@ recursive jobs
 logging
 ability to setup repetitive jobs
 hooks and triggers - REST client?
+
+Use Cases:
+Execute code on specific machines right now
+ - Define the job contents in an environment.yaml file
+ - execute makeitso [environment] [task]
+Execute code later
+
+
+Execution model
+ - makeitso only performs actions on its local machine
+ - connect to target machine (mechanism of choice), run makeitso with execution string
+
+Language Changes:
+
+
+Disseminating Configuration:
+
+Security:
+ - Actions are determined by yaml files in a directory on actionable machines
+ - Actionable machines know about
+    - The version of their yaml: checksum
+    - The host keys of machines allowed to provide new yaml
+ - Commands arrive with a yaml version, and a hostkey
+ - If the version matches, the code will be executed
+ - Push commands can distribute new yaml
+ - Push commands come with the machines hostkey
+ - If the comparison succeeds, the new yaml is installed
+
+ - This means that any machine with makeitso and the same version of the taml can instigate deployment commands
+
+Changes:
+ - Only execute code if hostname is equal to target machine
+
+Deployment:
+ - makeitso user must exist
+ - sudo must alow makeitso-priv to run
+ - ssh keys must allow makeitso to connect to
+ - yaml files must be in place
+
+Config file synchronization:
+ - 
+
+The yaml files have a checksum as a total
+Remote calls to makeitso come from a checksum
+yaml files must be propogated somehow
+
+Maybes:
+ - Should we use an existing protocol such as gossip?
