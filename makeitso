@@ -1,0 +1,35 @@
+#!/usr/bin/python
+
+import subprocess
+import sys
+import pwd
+import os
+import re
+from mis_utils import logger, arg_parser, get_all_configs, get_roles
+
+args = arg_parser()
+
+logger(args, 'debug', 'Starting run')
+
+privargs = ["/usr/bin/sudo", "-u", "makeitso", "/usr/sbin/makeitso-priv"]
+
+# Force passing on of our natural user
+privargs.append('-u')
+privargs.append(args.user)
+
+for i in sys.argv:
+  if not re.search('makeitso',i):
+    privargs.append(i)
+
+privargs.append('-e')
+privargs.append(pwd.getpwuid(os.getuid())[0])
+
+logger(args, 'debug', 'Calling makeitso-priv with: '+str(privargs))
+
+try:
+  returncode = subprocess.call(privargs)
+except:
+  logger(args, 'critical', 'Call Failed to makeitso-priv')
+
+logger(args, 'debug', 'Finished makeitso')
+

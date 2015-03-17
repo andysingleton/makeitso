@@ -1,0 +1,19 @@
+beta:
+  - action: 'deploy-info-node'
+    servers:
+      - 'app-beta.openstacklocal'
+    user: 'root'
+    cwd: '/local'
+    failcontinue: false
+    require_version: true
+    command: -|
+      cd /local/info-node
+      git pull
+      get checkout tags/__VERSION__
+      - |
+        docker restart info-node-1
+    allowed:
+      - 'mraym'
+      - 'rcous'
+      - 'asing'
+      - 'sosbo'

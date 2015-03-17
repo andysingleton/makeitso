@@ -1,0 +1,18 @@
+live:
+  - action: 'deploy-info-node'
+    servers:
+      - 'app-live-1.openstacklocal'
+      - 'app-live-2.openstacklocal'
+    user: 'root'
+    cwd: '/local'
+    failcontinue: false
+    require_version: true
+    command: |
+      cd /local/info-node
+      git pull
+      get checkout tags/__VERSION__
+      docker restart info-node-1
+      docker restart info-node-2
+    allowed:
+      - 'asing'
+      - 'sosbo'

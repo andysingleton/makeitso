@@ -1,0 +1,8 @@
+requirements
+setup script
+language.py - module for handling language structure
+logic structures
+recursive jobs
+logging
+ability to setup repetitive jobs
+hooks and triggers - REST client?

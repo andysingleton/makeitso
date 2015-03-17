@@ -1,0 +1,41 @@
+dev:
+  - action: 'deploy-info-node'
+    servers:
+      - 'app-dev.openstacklocal'
+    user: 'root'
+    cwd: '/local'
+    failcontinue: true
+    require_version: false
+    command:
+      - |
+        cd /var/tmp
+        touch stamp1
+        echo 1
+      - |
+        sleep 1
+        touch /var/tmp/stamp2
+    allowed:
+      - 'mraym'
+      - 'rcous'
+      - 'asing'
+      - 'sosbo'
+  - action: 'deploy-view-node'
+    servers:
+      - 'app-dev.openstacklocal'
+    user: 'root'
+    cwd: '/local'
+    failcontinue: true
+    require_version: false
+    command:
+      - |
+        cd /var/tmp
+        touch stamp1
+        echo 1
+      - |
+        sleep 1
+        touch /var/tmp/stamp2
+    allowed:
+      - 'mraym'
+      - 'rcous'
+      - 'asing'
+      - 'sosbo'

@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+import os
+from mis_utils import *
+import sys
+
+args = arg_parser()
+logger(args, 'debug', 'Starting privileged process')
+
+# Get our environment files (1 file per environment)
+yaml_object = get_all_configs(args)
+
+# Make sure we have everything we need
+validate_everything(args, yaml_object)
+
+# Get the requested task from the yaml
+action = get_task(args, yaml_object)
+
+# Execute it
+execute_action(args, action)
+
+logger(args, 'debug', 'Finished makeitso-priv')
+exit(0)
+
