@@ -1,28 +1,31 @@
 #!/usr/bin/python
 
+# makeitso
+# Created: 1/1/15
+# makeitso is a lightweight deployment tool configured with yaml
+# This is the unprivileged utility, intended to be run from a standard user account
+# Provided you have sudo setup correctly, it will pass on details to the privileged utility
+
 import subprocess
 import sys
 import pwd
 import os
 import re
-from mis_utils import logger, arg_parser, get_all_configs, get_roles
+from mis_utils import logger, arg_parser
 
 args = arg_parser()
-
-logger(args, 'debug', 'Starting run')
+logger(args, 'info', 'Started run')
 
 privargs = ["/usr/bin/sudo", "-u", "makeitso", "/usr/sbin/makeitso-priv"]
 
-# Force passing on of our natural user
+# TO DO: Have the priv utility determine who made the sudo call automatically
 privargs.append('-u')
 privargs.append(args.user)
 
+# We can probably do this better too
 for i in sys.argv:
   if not re.search('makeitso',i):
     privargs.append(i)
-
-privargs.append('-e')
-privargs.append(pwd.getpwuid(os.getuid())[0])
 
 logger(args, 'debug', 'Calling makeitso-priv with: '+str(privargs))
 
@@ -31,5 +34,5 @@ try:
 except:
   logger(args, 'critical', 'Call Failed to makeitso-priv')
 
-logger(args, 'debug', 'Finished makeitso')
+logger(args, 'info', 'Finished run')
 

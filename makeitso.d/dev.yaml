@@ -1,4 +1,4 @@
-dev:
+makeitso:
   - action: 'deploy-info-node'
     servers:
       - 'app-dev.openstacklocal'

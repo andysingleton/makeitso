@@ -1,23 +1,42 @@
 #!/usr/bin/python
 
 import os
-from mis_utils import *
 import sys
+from mis_utils import compare_sig, get_yaml, get_task, parse_validate
+from checksum import *
 
 args = arg_parser()
 logger(args, 'debug', 'Starting privileged process')
 
-# Get our environment files (1 file per environment)
-yaml_object = get_all_configs(args)
+# Read the yaml for our environment
+yaml_filespec=args.config+'/'+args.environment+'.yaml'
+try:
+  env_yaml = get_yaml(yaml_filespec)
+except:
+  logger('crit','No yaml exists for that environment %s' % environment)
 
-# Make sure we have everything we need
-validate_everything(args, yaml_object)
+# Make sure we have asked for something valid
+parse_validate(args, env_yaml)
+
+# Does the given sig match the conig one 
+sig_valid = compare_sig(yaml_filespec,args.checksum)
 
 # Get the requested task from the yaml
-action = get_task(args, yaml_object)
+try:
+  action = env_yaml['makeitso'].args.action
+except:
+  logger('crit','The requested action is not defined: %s' % args.action)
+
+#parse_action(action)
+
+# Validate the user
+
+# user validation
+
+# Make sure we have everything we need
 
 # Execute it
-execute_action(args, action)
+#execute_action(args, action)
 
 logger(args, 'debug', 'Finished makeitso-priv')
 exit(0)

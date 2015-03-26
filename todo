@@ -9,49 +9,82 @@ ability to setup repetitive jobs
 hooks and triggers - REST client?
 
 Use Cases:
-Execute code on specific machines right now
- - Define the job contents in an environment.yaml file
- - execute makeitso [environment] [task]
+Execute code right now
+ - makeitso <environment> <task> [now]
 Execute code later
-
+ - makeitso <environment> <task> [dd:mm:yy HH:MM]
+Execute code many times
+ - makeitso <environment> <task> [daily|hourly|* * * * *]
+Deploy new yaml
+ - makeitso <environment> -c </path/to/new/yaml>
+Halt all jobs
+ - makeitso <environment> halt
+Set-up a new node for makeitso - deployment node only
+ - makeitso <environment> -n <hostname>  (requires keys and sudo in place)
+List deployment runs
+ - makeitso <environment> -l [hostname]  (if no hostname, then gets for all hosts in environment
+Retrieve log detail for build
+ - makeitso <environment> -s <hostname> <build number>
+Add a deployment node - only a deployment node can designate a new node
+ - makeitso <environment> -d <hostkey>
 
 Execution model
  - makeitso only performs actions on its local machine
  - connect to target machine (mechanism of choice), run makeitso with execution string
 
 Language Changes:
+ - Allow retry of whole job on failure - code and config item
+   - retryOnFail
+ - Allow triggering of other jobs, on this or other nodes
+  triggerJob: "<name of target>"
+    - environment: "target environment"
+    - parameters - How to handle
+ - Specify a job is to be run from a Trusted node only
+   - secureJob
 
+man -> dev -> qa -> prod
+give all yaml checksums, even without the yaml
+how to propagate?
+makeitso -c will push out new checksums to all? no
 
-Disseminating Configuration:
+ - How do we handle calls from one yaml file to another
+ - potentially we could run old code
+
+ - Simple REST api to allow triggering of jobs via webhook
+ - 
 
 Security:
  - Actions are determined by yaml files in a directory on actionable machines
  - Actionable machines know about
     - The version of their yaml: checksum
     - The host keys of machines allowed to provide new yaml
- - Commands arrive with a yaml version, and a hostkey
+ - Commands arrive with a yaml version
  - If the version matches, the code will be executed
  - Push commands can distribute new yaml
- - Push commands come with the machines hostkey
+ - Push commands come with the new yaml, and the calling machines hostkey
  - If the comparison succeeds, the new yaml is installed
 
- - This means that any machine with makeitso and the same version of the taml can instigate deployment commands
+ - This means that any machine with makeitso and the same version of the yaml can instigate deployment commands
+
+Avoiding duplicatation:
+ - Since jobs can be triggered by multiple other nodes, we need to know the original source.
+ - Manually triggered jobs have their own UUID.
+ - When a job is triggered by the completion of another job, we ensure we haven't already performed an action started by that originating UUID
+ - So what UUID does a timed job have? If two nodes triggerr the same follow-up job
 
 Changes:
  - Only execute code if hostname is equal to target machine
 
+Other Requirements:
+ - Not every machine needs every yaml file
+ - Split the config. Checksums apply only to the environments in which those machines sit
+ - This could mean multiple files for any machine
+
 Deployment:
  - makeitso user must exist
- - sudo must alow makeitso-priv to run
+ - sudo must allow makeitso-priv to run
  - ssh keys must allow makeitso to connect to
  - yaml files must be in place
-
-Config file synchronization:
- - 
-
-The yaml files have a checksum as a total
-Remote calls to makeitso come from a checksum
-yaml files must be propogated somehow
 
 Maybes:
  - Should we use an existing protocol such as gossip?

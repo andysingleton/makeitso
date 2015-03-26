@@ -5,6 +5,7 @@ import syslog
 import yaml
 import paramiko
 import socket
+import hashlib
 
 def execute_action(args, task):
   jobuser = task['user']
@@ -107,69 +108,41 @@ def get_roles(args, user,  yaml_object):
   return(privlist)
 
 ### get_tasks: Find all tasks for an environment and action
-def get_task(args, yaml_object):
-  environment = args.environment
-  action = args.action
+def get_task(action, yaml_object):
 
-  for item in yaml_object[environment]:
+  for item in yaml_object[makeitso]:
     try:
       item['action']
-      validate_strings(args, item, ['servers', 'allowed', 'cwd', 'command'])
-      item=default_items(args, item, {'failcontinue': False, 'user': 'root', 'required_version': False})
       return(item)
     except:
       pass
 
   logger(args, 'critical', 'The action {} is not defined for environment {}.',action,environment)
- 
 
-  #elif item['type'] == 'options':
-  #  item=default_items(args, item, {'tagged-only': False})
-  #elif item['type'] == 'role':
-  #  validate_strings(args, item, ['name', 'users'])
-  #else:
-  #  logger(args, 'critical', 'YAML action block '+item['namecontained no \'type\'')
-
-  # print  yaml_object['environments'][environment]
-
-  
-
-  
-
-### get_all_configs: iterate over all yaml files ###
-def get_all_configs( args ):
-  try:
-    interlist = os.listdir(args.config)
-    logger(args, 'debug', 'Reading configs from '+args.config)
-  
-  except:
-    logger(args, 'critical', 'Can\'t read the configuration directory: '+args.config)
-  filelist = []
-
-  for myfile in interlist:
-    if myfile.endswith('.yaml'):
-      filelist.append(myfile)
-
-  if len(filelist) == 0:
-    logger(args, 'critical', 'Can\'t read any yaml files from configuration directory: '+args.config)
+### get_yaml: iterate over all yaml files ###
+def get_yaml( filespec ):
 
   yaml_object = {}
+  yaml_file = open(filespec)
 
-  for myfile in filelist:
-    yaml_object.update(parse_file(args, args.config+'/'+myfile))
+  try:
+    yaml_object.update(yaml.load(yaml_file))
+  except:
+    return false
+
+  yaml_file.close()
 
   return yaml_object
 
-
-### parse_file: load specific yaml files ###
-def parse_file(args, myfile):
-  file_object = open(myfile,'r')
-  try:
-    return (yaml.load(file_object))
-  except:
-    logger(args, 'warn', 'invalid YAML in file '+myfile)
-    return ({})
-
+### Get the signature of the file provided
+def compare_sig(filespec,hashcheck):
+  myfile = open(filespec)
+  sig = hashlib.sha256(myfile).digest()
+  myfile.close()
+  if sig == hashcheck:
+    return True
+  else:
+    return False
 
 ### logger: Logging handler ###
 def logger( args, level, message ):
@@ -203,21 +176,42 @@ def logger( args, level, message ):
     exit(1)
 
 
+### parse_validate: Ensure we are about to do something valid
+def parse_validate(args, yaml):
+
+  # Do we have an environment
+  try:
+    args.environment
+  except:
+    logger('crit','Parser failed for environment: %s' % args['environment'])
+
+  # Is our action valid for our environment
+  actions=get_actions(yaml)
+  try:
+    actions[args.action]
+  except:
+    logger('crit','Parser failed for action: %s' % args.action)
+
+  return true
+
 ### arg_parser: Handle command-line arguments
 def arg_parser():
 
   parser = argparse.ArgumentParser(description='A program to orchestrates remote deployments based on yaml')
+  parser.add_argument('environment',
+                    help='Specify environment for action')
   parser.add_argument('action',
                     help='Execute deployment action')
-  parser.add_argument('-e', '--elevate',
-                    help='Internal use. To be removed')
+  parser.add_argument('-t', '--time',
+                    help='Timespec: [[dd:mm:yy] HH:MM] [daily] [hourly] [* * * * *]')
+  parser.add_argument('-s', '--checksum',
+                    help='Checksum of the yaml to be executed',
+                    default='nohashcheck')
   parser.add_argument('-u', '--user',
                     help='Execute action as user [user]',
                     default=pwd.getpwuid(os.getuid())[0])
-  parser.add_argument('environment',
-                    help='Specify environment for action')
-  parser.add_argument('version',
-                    help='Specify tag or version for code',
+  parser.add_argument('params',
+                    help='Specify deployment parameters: [key=value]',
                     nargs='?')
   parser.add_argument('-q', '--quiet',
                     help='Quiet mode. No messaging. Cannot be used with -d. Default off',
@@ -235,8 +229,5 @@ def arg_parser():
   parser.add_argument('-c', '--config',
                     help='Specify alternate config file. Defaults to /etc/makeitso/makeitso.d/*.yaml',
                     default='/etc/makeitso/makeitso.d')
-  parser.add_argument('-k','--key',
-                    help='Give an alternate ssh key for communications',
-                    default='/etc/makeitso/deploy.key')
   return (parser.parse_args())
 
