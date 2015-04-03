@@ -1,19 +1,18 @@
 makeitso:
-  deploy-info-node:
+  stamper:
     servers:
-      - 'app-dev.openstacklocal'
-    user: 'root'
-    cwd: '/local'
+      - 'localhost'
+    user: 'asing'
+    cwd: '/var/tmp'
     failcontinue: true
     require_version: false
+    parameters:
+     name: bill
+     content: bob
     command:
       - |
-        cd /var/tmp
-        touch stamp1
-        echo 1
-      - |
-        sleep 1
-        touch /var/tmp/stamp2
+        echo '__content__' > __name__
+        echo "done" > stamp.done
     allowed:
       - 'mraym'
       - 'rcous'

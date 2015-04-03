@@ -1,43 +1,50 @@
 #!/usr/bin/python
 
+# makeitso-priv
+# Can be called from either makeitso, or from the ssh auth-keys command statement
+# mis-p is the main worker, and will implement actions on the box if the calling user is allowed, and if they provided the same checksum for the yml config as exists on the local box
+
 import os
 import sys
-from mis_utils import compare_sig, get_yaml, get_task, parse_validate
-from checksum import *
+from mis_utils import *
+import hashlib
+
+# Utility defaults
+safe_configs = '/etc/makeitso/makeitso.d'
 
 args = arg_parser()
-logger(args, 'debug', 'Starting privileged process')
+mislog=logunit(args.quiet, args.verbose, args.logfile)
+mislog.log('debug', 'Starting privileged process')
 
 # Read the yaml for our environment
-yaml_filespec=args.config+'/'+args.environment+'.yaml'
-try:
-  env_yaml = get_yaml(yaml_filespec)
-except:
-  logger('crit','No yaml exists for that environment %s' % environment)
+yaml_filespec=safe_configs+'/'+args.environment+'.yaml'
+env_yaml = get_yaml(mislog, yaml_filespec)
+
+mislog.log('debug', 'Found yaml %s' % env_yaml['makeitso'])
 
 # Make sure we have asked for something valid
-parse_validate(args, env_yaml)
+parse_validate(mislog, args, env_yaml)
 
-# Does the given sig match the conig one 
-sig_valid = compare_sig(yaml_filespec,args.checksum)
+# We can always list jobs
+show_list(mislog, args, env_yaml)
 
-# Get the requested task from the yaml
-try:
-  action = env_yaml['makeitso'].args.action
-except:
-  logger('crit','The requested action is not defined: %s' % args.action)
+# Validity data
+# Does the given sig match the config one 
+sig_valid = compare_sig(mislog,yaml_filespec,args.checksum)
+# Is the user valid for this task
+user_valid = get_user(mislog, env_yaml['makeitso'][args.action])
+# Was the utility executed locally (ie, by the non-priv makeitso)
+run_local = get_local()
 
-#parse_action(action)
+# Validate the user and action
+authorize(mislog, sig_valid, run_local, user_valid)
 
-# Validate the user
-
-# user validation
-
-# Make sure we have everything we need
+# Substitute parameters
+action_yaml=sub_params(mislog, env_yaml['makeitso'][args.action], args.params)
 
 # Execute it
-#execute_action(args, action)
+execute_action(mislog, action_yaml)
 
-logger(args, 'debug', 'Finished makeitso-priv')
+mislog.log('debug', 'Finished makeitso-priv')
 exit(0)
 
