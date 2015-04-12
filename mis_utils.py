@@ -1,7 +1,9 @@
 import argparse
 import pwd
 import os
+import re
 import syslog
+import tempfile
 import yaml
 import paramiko
 import socket
@@ -9,6 +11,8 @@ import hashlib
 import sys
 import psutil
 import pwd
+import subprocess
+import commands
 
 class logunit ():
    """
@@ -60,6 +64,15 @@ class logunit ():
      if level == 'crit':
        exit(1)
 
+### Determine if we are on an actionable machine
+def get_target(mislog, serverlist):
+    if socket.gethostname() in serverlist:
+      return True
+    if 'localhost' in serverlist:
+      return True
+
+    return False
+
 def authorize(mislog, sig_valid, run_local, user_valid):
   # Allow execution for the following criteria:
 
@@ -81,7 +94,43 @@ def authorize(mislog, sig_valid, run_local, user_valid):
   mislog.log('crit','You are not authorised to execute this action')
   return False
 
+
+### Execute the action on the local box
 def execute_action(mislog, task):
+    jobuser = task['user']
+    cwd = task['cwd']
+    mislog.log('debug', 'Launching command as %s in %s' % (jobuser, cwd))
+
+    for comm in task['command']:
+
+      # create a temp file
+      handle = tempfile.NamedTemporaryFile(delete=True)
+
+      # fill it with content
+      if not re.match('#!', comm):
+        handle.writelines('#!/bin/bash\n')
+      handle.writelines("cd %s\n" % cwd)
+      handle.writelines(comm)
+
+      # Set ownership to the target user
+      os.chown(handle.name, jobuser)
+
+      # Ceate sudo string
+      subarg = ["/usr/bin/sudo", "-u", jobuser, handle.name]
+      #handle.writelines("/usr/bin/sudo -n -u %s handle.name\n" % jobuser)
+      #results = commands.getoutput(".%s" % handle.name)
+
+      returncode = subprocess.call(subargs)
+
+      print returncode
+      # remove the file
+      handle.close
+
+      #mislog.log('debug', 'Created %s' % dhandle.name)
+
+
+### Contact the listed machines to initiate the job
+def execute_remote(mislog, args):
   jobuser = task['user']
   jobs = task['command']
   servers = task['servers']
@@ -213,10 +262,11 @@ def sub_params(mislog, env_yaml, params):
         mislog.log('debug',"Default parameter %s is %s" % (param, env_yaml['parameters'][param]))
 
     # Override with the cl args
-    for param_string in params.split(','):
-        param, value = params.split('=')
-        final_params[param] = value
-        mislog.log('debug',"Given parameter %s is %s" % (param, value))
+    if params:
+      for param_string in params.split(','):
+          param, value = params.split('=')
+          final_params[param] = value
+          mislog.log('debug',"Given parameter %s is %s" % (param, value))
 
     for index, command in enumerate(env_yaml['command']):
       mislog.log('debug',"Substitution yaml: %s" % final_params)

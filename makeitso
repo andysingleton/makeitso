@@ -10,8 +10,6 @@
 
 import subprocess
 import sys
-import pwd
-import os
 import re
 from mis_utils import logunit, arg_parser
 
@@ -21,11 +19,6 @@ mislog.log('info', 'Started run')
 
 privargs = ["/usr/bin/sudo", "-u", "makeitso", "/usr/sbin/makeitso-priv"]
 
-# TO DO: Have the priv utility determine who made the sudo call automatically
-# privargs.append('-u')
-# privargs.append(args.user)
-
-# We can probably do this better too
 for i in sys.argv:
     if not re.search('makeitso', i):
         privargs.append(i)

@@ -42,8 +42,13 @@ authorize(mislog, sig_valid, run_local, user_valid)
 # Substitute parameters
 action_yaml=sub_params(mislog, env_yaml['makeitso'][args.action], args.params)
 
-# Execute it
-execute_action(mislog, action_yaml)
+# Are we on a target machine?
+if (get_target(mislog, env_yaml['makeitso'][args.action]['servers'])):
+  # Y = execute action
+  execute_action(mislog, action_yaml)
+else:
+  # N = contact another mis
+  execute_remote(mislog, args)
 
 mislog.log('debug', 'Finished makeitso-priv')
 exit(0)
