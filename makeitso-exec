@@ -1,0 +1,76 @@
+#!/bin/python
+import pwd
+import os
+import re
+import sys
+import pwd
+import commands
+import tempfile
+import hashlib
+import subprocess
+
+# makeitso-exec will write out all commands to a temporary file, then execute it
+# as the current user
+
+# Arguments are:
+# 1: The CWD
+# 2: timeout
+# 3: concurrent_flag
+# 4: the command
+
+try:
+  cwd = sys.argv[1]
+  timeout = sys.argv[2]
+  concurrent = sys.argv[3]
+  comm = sys.argv[4]
+except:
+  print "Error. makeitso-exec takes 4 arguments"
+  print "cwd, timeout in secs, a concurrency flag and a command"
+  exit(1)
+
+# Set timeout interrupt
+### HERE
+
+sig = hashlib.sha256(comm).digest()
+runstamp = "/var/run/mis_%s" % sig
+
+# if we dont want concurrent runs (False), check for a lockfile
+if concurrent == False:
+  # Get hash of commands
+
+  while os.stat(runstamp):
+    print "Sleeping until execute"
+    sleep (5)
+  try:
+    subprocess.call("touch ".runstamp)
+  except:
+    print "Failed to create stamp"
+    exit(1)
+
+# create a temp file
+handle = tempfile.NamedTemporaryFile(delete=False)
+
+# Provide a shell if one wasnt specified
+if not re.match('#!', comm):
+    handle.writelines('#!/bin/bash\n')
+
+handle.writelines("cd %s\n" % cwd)
+handle.writelines(comm)
+handle.close()
+os.chmod(handle.name,0700)
+returncode = subprocess.call(handle.name)
+os.rem(handle.name)
+
+# remove stampfile
+
+
+# This program will tke the commands you give it,
+# and execute them inside a temporary script
+# It returns a success code
+
+try:
+  subprocess.call("rm ".runstamp)
+except:
+  pass
+
+exit(0)
